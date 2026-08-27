@@ -25,7 +25,7 @@ def read_pico():
 while True:
 	data = read_pico()
 
-	if data is None
+	if data is None:
 		print("...沒收到完整資料")
-	else
+	else:
 		print(f"距離 {data['dist_mm']} mm, 狀態 {data['state']}, 門 {data['door']}")
