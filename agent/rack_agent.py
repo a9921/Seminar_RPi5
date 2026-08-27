@@ -13,6 +13,17 @@ BAUD = 115200
 
 CMD_TOPIC = "rack/security/cmd"
 
+TELEMETRY_TOPIC = "rack/security/telemetry"
+TELEMETRY_INTERVAL = 5
+
+STATE_NAME = {
+    0: "error",
+    1: "normal",
+    2: "warn",
+    3: "alert",
+    4: "anomaly",
+}
+
 def read_door():
     with open(DEVICE_PATH) as f:
         data = json.loads(f.read())
@@ -62,10 +73,29 @@ armed = True
 alarm = False
 prev_door = read_door()
 
+last_telemetry = 0.0
 
 while True:
     door = read_door()
     data = read_pico()
+    now = time.time()
+
+    if now - last_telemetry >= TELEMETRY_INTERVAL:
+        last_telemetry = now
+
+        if last_pico is None:
+            pico_state = "error"
+        else:
+            pico_state = STATE_NAME.get(last_pico["state"], "error")
+
+        payload = {
+            "timestamp": int(time.time()),
+            "pico_state": pico_state,
+            "door_rack": "open" if door == 1 else "close",
+        }
+
+        client.publish(TELEMETRY_TOPIC, json.dumps(payload), 0, False)
+        print("→ telemetry", payload)
 
     if door == 1 and prev_door == 0 and armed:
         alarm = True
@@ -81,4 +111,4 @@ while True:
         print("...沒收到完整資料")
     else:
         last_pico = data
-        print(f"距離 {data['dist_mm']} mm, 狀態 {data['state']}, 門 {data['door']}, armed {door[armed]}, alarm {door[alarm]}")
+        print(f"距離 {data['dist_mm']} mm, 狀態 {data['state']}, 門 {data['door']}")
