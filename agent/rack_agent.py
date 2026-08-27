@@ -74,6 +74,7 @@ last_pico = None
 armed = True
 alarm = False
 prev_door = read_door()
+ser.write(b"D" if prev_door == 1 else b"C")
 prev_armed = None
 prev_alarm = False
 
@@ -104,6 +105,9 @@ try:
 
         if door == 1 and prev_door == 0 and armed:
             alarm = True
+
+        if door != prev_door:
+            ser.write(b"D" if door == 1 else b"C")
         prev_door = door
     
         if armed != prev_armed:
