@@ -23,6 +23,8 @@ STATE_NAME = {
     3: "alert",
     4: "anomaly",
 }
+STATE_TOPIC = "rack/security/state"
+EVENT_TOPIC = "rack/security/event"
 
 def read_door():
     with open(DEVICE_PATH) as f:
@@ -72,43 +74,65 @@ last_pico = None
 armed = True
 alarm = False
 prev_door = read_door()
+prev_armed = None
+prev_alarm = False
 
 last_telemetry = 0.0
 
-while True:
-    door = read_door()
-    data = read_pico()
-    now = time.time()
+try:
+    while True:
+        door = read_door()
+        data = read_pico()
+        now = time.time()
 
-    if now - last_telemetry >= TELEMETRY_INTERVAL:
-        last_telemetry = now
+        if now - last_telemetry >= TELEMETRY_INTERVAL:
+            last_telemetry = now
 
-        if last_pico is None:
-            pico_state = "error"
+            if last_pico is None:
+                pico_state = "error"
+            else:
+                pico_state = STATE_NAME.get(last_pico["state"], "error")
+
+            payload = {
+                "timestamp": int(time.time()),
+                "pico_state": pico_state,
+                "door_rack": "open" if door == 1 else "close",
+            }
+
+            client.publish(TELEMETRY_TOPIC, json.dumps(payload), 0, False)
+            print("→ telemetry", payload)
+
+        if door == 1 and prev_door == 0 and armed:
+            alarm = True
+        prev_door = door
+    
+        if armed != prev_armed:
+            prev_armed = armed
+            client.publish(STATE_TOPIC, json.dumps({"timestamp": int(time.time()), "armed": armed,}), 1, True)
+            print("→ state", armed)
+
+        if alarm != prev_alarm:
+            prev_alarm = alarm
+            client.publish(EVENT_TOPIC, json.dumps({"timestamp": int(time.time()), "alarm": alarm, "alarm_code": "anomaly" if alarm else "normal",}), 1, False)
+            print("→ event", alarm)
+
+        print(f"armed {armed}, alarm {alarm}")
+
+        if door == 1:
+            print("door_state = open")
         else:
-            pico_state = STATE_NAME.get(last_pico["state"], "error")
+            print("door_state = close")
 
-        payload = {
-            "timestamp": int(time.time()),
-            "pico_state": pico_state,
-            "door_rack": "open" if door == 1 else "close",
-        }
+        if data is None:
+            print("...沒收到完整資料")
+        else:
+            last_pico = data
+            print(f"距離 {data['dist_mm']} mm, 狀態 {data['state']}, 門 {data['door']}")
+except KeyboardInterrupt:
+    print("\n結束中...")
 
-        client.publish(TELEMETRY_TOPIC, json.dumps(payload), 0, False)
-        print("→ telemetry", payload)
-
-    if door == 1 and prev_door == 0 and armed:
-        alarm = True
-    prev_door = door
-    print(f"armed {armed}, alarm {alarm}")
-
-    if door == 1:
-        print("door_state = open")
-    else:
-        print("door_state = close")
-
-    if data is None:
-        print("...沒收到完整資料")
-    else:
-        last_pico = data
-        print(f"距離 {data['dist_mm']} mm, 狀態 {data['state']}, 門 {data['door']}")
+client.publish(TOPIC, json.dumps({"online": False}), 1, True)
+time.sleep(0.5)
+client.loop_stop()
+client.disconnect()
+ser.close()
