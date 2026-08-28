@@ -38,6 +38,7 @@ def read_pico():
         return None
 
     text = raw.decode().strip()
+    print("RAW:", repr(text))
 
     try:
         return json.loads(text)
@@ -131,7 +132,7 @@ try:
             print("...沒收到完整資料")
         else:
             last_pico = data
-            print(f"距離 {data['dist_mm']} mm, 狀態 {data['state']}, 門 {data['door']}")
+            print(f"距離 {data.get('dist_mm', '?')} mm, 狀態 {data.get('state', '?')}, 門 {data.get('door', '?')}")
 except KeyboardInterrupt:
     print("\n結束中...")
 
