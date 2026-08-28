@@ -2,6 +2,7 @@ import json
 import time
 import serial
 import paho.mqtt.client as mqtt
+import os
 
 DEVICE_PATH = "/dev/rack_door1"
 BROKER = "192.168.69.190"
@@ -38,7 +39,6 @@ def read_pico():
         return None
 
     text = raw.decode().strip()
-    print("RAW:", repr(text))
 
     try:
         return json.loads(text)
@@ -58,14 +58,29 @@ def on_cmd(client, userdata, msg):
     elif action == "RESET_ALARM":
         alarm = False
 
+if not os.path.exists(DEVICE_PATH):
+    print(f"x 找不到 {DEVICE_PATH}")
+    print("  核心模組未載入。請先執行:")
+    print("  sudo insmod ~/Seminar/kmod/rack_door.ko")
+    raise SystemError(1)
+
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="rack-security")
 
 client.will_set(TOPIC, json.dumps({"online": False}), 1, True)
-client.connect(BROKER, PORT, 60)
+try:
+    client.connect(BROKER, PORT, 60)
+    mqtt_ok = True
+except OSError as e:
+    print(f"▲ MQTT 連線失敗: {e}")
+    print(" 以離線模式繼續，門、UART、超音波、燈條功能不受影響")
+    mqtt_ok = False
+
 client.on_message = on_cmd
-client.subscribe(CMD_TOPIC, 1)
-client.loop_start()
-client.publish(TOPIC, json.dumps({"online": True}), 1, True)
+
+if mqtt_ok:
+    client.subscribe(CMD_TOPIC, 1)
+    client.loop_start()
+    client.publish(TOPIC, json.dumps({"online": True}), 1, True)
 
 ser = serial.Serial(SERIAL_PORT, BAUD, timeout=1)
 ser.reset_input_buffer()
@@ -136,7 +151,8 @@ try:
 except KeyboardInterrupt:
     print("\n結束中...")
 
-client.publish(TOPIC, json.dumps({"online": False}), 1, True)
+if mqtt_ok:
+    client.publish(TOPIC, json.dumps({"online": False}), 1, True)
 time.sleep(0.5)
 client.loop_stop()
 client.disconnect()
