@@ -1,0 +1,17 @@
+[Unit]
+Description=Rack door security monitor agent
+BindsTo=dev-rack_door1.device
+After=dev-rack_door1.device network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/Seminar/agent
+ExecStart=/usr/bin/python3 -u rack_agent.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

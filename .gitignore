@@ -1,0 +1,12 @@
+# 巢狀獨立 repo（rack-door-kmod），不納入本 repo 追蹤
+kmod/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 編輯器 / 機器相關
+.vscode/
+*.swp
+.lgd-nfy*

@@ -1,0 +1,1 @@
+KERNEL=="rack_door1", ACTION=="add", MODE="0444", TAG+="systemd", ENV{SYSTEMD_WANTS}+="rack-monitor.service"
