@@ -6,7 +6,7 @@
 |---|---|
 | **Seminar_RPi5**（本 repo） | Python agent（`agent/`）、systemd／udev 部署設定（`deploy/`） |
 | [rack-door-kmod](https://github.com/a9921/rack-door-kmod) | 門磁簧開關的 Linux kernel module `rack_door.ko` |
-| Pico W 韌體 | 尚未上傳 |
+| [Seminar_PICOW](https://github.com/a9921/Seminar_PICOW) | Pico W 韌體：超音波測距、接近判斷、WS2812B 燈條、UART 回報 |
 
 > 📹 DEMO 影片：錄製中
 
@@ -38,12 +38,12 @@ flowchart LR
 | 檔案 | 語言 | 行數 | 位置 |
 |---|---|---|---|
 | `rack_door.c` | C（Linux kernel） | 312 | rack-door-kmod |
-| `ws2812.c` | C（Pico C SDK 2.3.0） | 343 | Pico 韌體 |
+| `ws2812.c` | C（Pico C SDK 2.3.0） | 343 | Seminar_PICOW |
 | `rack_agent.py` | Python | 203 | `agent/` |
 | `Makefile` | Make | 44 | rack-door-kmod |
 | `rack-monitor.service` | systemd unit | 17 | `deploy/` |
 
-Pico 韌體中的 `ws2812.pio` 取自 Pico SDK 官方範例，不是我寫的。
+Pico 韌體中的 `ws2812.pio` 取自 Pico SDK 官方範例，不是我寫的；`ws2812.c` 以 SDK 範例為起點，送色函式與 PIO 初始化沿用範例，其餘為自行撰寫。
 
 ## Agent 行為
 
